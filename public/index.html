@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Macchina Cioccolato</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #222;
+      color: white;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .card {
+      background: #333;
+      padding: 20px;
+      border-radius: 10px;
+      width: 300px;
+      margin: auto;
+    }
+
+    .semaforo {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      margin: 10px auto;
+      background: gray;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🍫 Macchina Cioccolato</h1>
+
+  <div class="card">
+    <p>🌡 Temperatura: <span id="temp">--</span> °C</p>
+    <p>💧 Umidità: <span id="hum">--</span> %</p>
+
+    <p>🚦 Stato:</p>
+    <div id="semaforo" class="semaforo"></div>
+
+    <button onclick="sendCommand('START')">START</button>
+    <button onclick="sendCommand('STOP')">STOP</button>
+  </div>
+
+  <script>
+    async function fetchData() {
+      const res = await fetch('/api/data');
+      const data = await res.json();
+
+      document.getElementById('temp').innerText = data.temperature;
+      document.getElementById('hum').innerText = data.humidity;
+
+      const semaforo = document.getElementById('semaforo');
+
+      if (data.status === "RUNNING") semaforo.style.background = "green";
+      else if (data.status === "WARNING") semaforo.style.background = "yellow";
+      else if (data.status === "STOPPED") semaforo.style.background = "red";
+    }
+
+    async function sendCommand(cmd) {
+      await fetch('/api/command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: cmd })
+      });
+    }
+
+    setInterval(fetchData, 5000);
+    fetchData();
+  </script>
+
+</body>
+</html>
