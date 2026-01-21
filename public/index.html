@@ -1,82 +1,74 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <title>Macchina Cioccolato</title>
-  <style>
-    body {
-      font-family: Arial;
-      background: #222;
-      color: white;
-      text-align: center;
-      padding: 40px;
-    }
-
-    .card {
-      background: #333;
-      padding: 20px;
-      border-radius: 10px;
-      width: 300px;
-      margin: auto;
-    }
-
-    .semaforo {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      margin: 10px auto;
-      background: gray;
-    }
-
-    button {
-      padding: 10px 20px;
-      margin: 10px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Macchina Cioccolato</title>
+<style>
+  body { font-family: Arial; text-align: center; margin-top: 50px; }
+  .semaforo { width: 100px; margin: 0 auto; padding: 20px; border-radius: 20px; background: #333; }
+  .luce { width: 60px; height: 60px; margin: 10px auto; border-radius: 50%; background: #555; }
+  .verde { background: green; }
+  .giallo { background: yellow; }
+  .rosso { background: red; }
+  button { margin: 10px; padding: 10px 20px; font-size: 16px; }
+</style>
 </head>
 <body>
+<h1>Dashboard Macchina Cioccolato</h1>
 
-  <h1>🍫 Macchina Cioccolato</h1>
+<div>
+  <p>Temperatura: <span id="temp">0</span> °C</p>
+  <p>Umidità: <span id="hum">0</span> %</p>
+  <p>Operatore presente: <span id="operator">No</span></p>
+</div>
 
-  <div class="card">
-    <p>🌡 Temperatura: <span id="temp">--</span> °C</p>
-    <p>💧 Umidità: <span id="hum">--</span> %</p>
+<div class="semaforo">
+  <div id="rosso" class="luce"></div>
+  <div id="giallo" class="luce"></div>
+  <div id="verde" class="luce"></div>
+</div>
 
-    <p>🚦 Stato:</p>
-    <div id="semaforo" class="semaforo"></div>
+<div>
+  <button onclick="sendCommand('START')">START</button>
+  <button onclick="sendCommand('STOP')">STOP</button>
+</div>
 
-    <button onclick="sendCommand('START')">START</button>
-    <button onclick="sendCommand('STOP')">STOP</button>
-  </div>
+<script>
+async function fetchData() {
+  try {
+    const res = await fetch('/api/data');
+    const data = await res.json();
+    document.getElementById('temp').innerText = data.temperature;
+    document.getElementById('hum').innerText = data.humidity;
+    document.getElementById('operator').innerText = data.operatorPresent ? "Sì" : "No";
 
-  <script>
-    async function fetchData() {
-      const res = await fetch('/api/data');
-      const data = await res.json();
+    // Semaforo
+    document.getElementById('verde').style.background = data.status === "RUNNING" ? "green" : "#555";
+    document.getElementById('giallo').style.background = data.status === "WARNING" ? "yellow" : "#555";
+    document.getElementById('rosso').style.background = data.status === "STOPPED" ? "red" : "#555";
+  } catch(err) {
+    console.error(err);
+  }
+}
 
-      document.getElementById('temp').innerText = data.temperature;
-      document.getElementById('hum').innerText = data.humidity;
+// Invia comando START/STOP al server
+async function sendCommand(command) {
+  try {
+    await fetch('/api/command', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ command })
+    });
+    fetchData(); // aggiorna subito lo stato
+  } catch(err) {
+    console.error(err);
+  }
+}
 
-      const semaforo = document.getElementById('semaforo');
-
-      if (data.status === "RUNNING") semaforo.style.background = "green";
-      else if (data.status === "WARNING") semaforo.style.background = "yellow";
-      else if (data.status === "STOPPED") semaforo.style.background = "red";
-    }
-
-    async function sendCommand(cmd) {
-      await fetch('/api/command', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command: cmd })
-      });
-    }
-
-    setInterval(fetchData, 5000);
-    fetchData();
-  </script>
-
+// Aggiorna ogni 5 secondi
+setInterval(fetchData, 5000);
+fetchData();
+</script>
 </body>
 </html>
